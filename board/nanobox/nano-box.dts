@@ -1,0 +1,138 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR X11)
+/*
+ * Copyright 2018 Icenowy Zheng <icenowy@aosc.io>
+ */
+
+/dts-v1/;
+#include "suniv-f1c100s.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	model = "Lichee Pi Nano";
+	compatible = "licheepi,licheepi-nano", "allwinner,suniv-f1c100s";
+
+	aliases {
+		mmc0 = &mmc0;
+		serial0 = &uart0;
+		spi0 = &spi0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	
+	leds {
+	compatible = "gpio-leds";
+
+		led-0 {
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&gpio_9539 0 GPIO_ACTIVE_HIGH>; /* P00 */
+			linux,default-trigger = "heartbeat";
+		};
+	};
+
+	reg_vcc3v3: vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+};
+
+&pio {
+	i2c0_pe_pins: i2c0-pe-pins {
+		pins = "PE11", "PE12";
+		function = "i2c0";
+	};
+
+	spi1_pa_pins: spi1-pa-pins {
+		pins = "PA0", "PA1", "PA2", "PA3";
+		function = "spi1";
+	};
+};
+
+
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pe_pins>;
+	status = "okay";
+
+	gpio_9539: tca9539@74 {
+		compatible = "ti,tca9539";
+		reg = <0x74>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		gpio-line-names =  "P00", "P01", "P02", "P03", 
+							"P04", "P05", "P06", "P07",
+							"P08", "P09", "P10", "P11",
+							"P12", "P13", "P14", "P15";
+	};
+};
+
+&mmc0 {
+	broken-cd;
+	bus-width = <4>;
+	disable-wp;
+	status = "okay";
+	vmmc-supply = <&reg_vcc3v3>;
+};
+
+&spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi0_pc_pins>;
+	status = "okay";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "winbond,w25q128", "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <40000000>;
+	};
+};
+
+&spi1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi1_pa_pins>;
+	status = "okay";
+
+		panel@0 {
+			compatible = "sitronix,st7789v";
+			reg = <0>;
+			status = "okay";
+
+			reset-gpios = <&pio 4 9 GPIO_ACTIVE_LOW>; /* PE9 */
+			dc-gpios = <&pio 4 10 GPIO_ACTIVE_HIGH>; /* PE10 */
+			spi-max-frequency = <20000000>;
+			spi-cpol;
+			
+			width = <240>;
+			height = <240>;
+			buswidth = <8>;
+			fps = <60>;
+		};
+};
+
+&otg_sram {
+	status = "okay";
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pe_pins>;
+	status = "okay";
+};
+
+&usb_otg {
+	dr_mode = "otg";
+	status = "okay";
+};
+
+&usbphy {
+	usb0_id_det-gpios = <&pio 4 2 GPIO_ACTIVE_HIGH>; /* PE2 */
+	status = "okay";
+};
